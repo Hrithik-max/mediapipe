@@ -49,9 +49,9 @@ class ObjectDetectorHelper(
         }
 
         val modelName = when (currentModel) {
-            MODEL_EFFICIENTDETV0 -> "models/efficientdet-lite0.tflite"
-            MODEL_EFFICIENTDETV2 -> "models/efficientdet-lite2.tflite"
-            else -> "efficientdet-lite0.tflite"
+            MODEL_EFFICIENTDETV0 -> "models/efficientdet_lite0.tflite"
+            MODEL_EFFICIENTDETV2 -> "models/efficientdet_lite2.tflite"
+            else -> "models/efficientdet_lite0.tflite"
         }
 
         baseOptionsBuilder.setModelAssetPath(modelName)
