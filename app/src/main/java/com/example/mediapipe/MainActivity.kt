@@ -81,7 +81,7 @@ class MainActivity : ComponentActivity(), ObjectDetectorHelper.DetectorListener 
                 threshold = ObjectDetectorHelper.THRESHOLD_DEFAULT,
                 maxResults = ObjectDetectorHelper.MAX_RESULTS_DEFAULT,
                 currentDelegate = ObjectDetectorHelper.DELEGATE_CPU,
-                currentModel = ObjectDetectorHelper.MODEL_EFFICIENTDETV0,
+                currentModel = ObjectDetectorHelper.MODEL_SSD_MOBILENETV2,
                 runningMode = RunningMode.LIVE_STREAM,
                 objectDetectorListener = this
             )

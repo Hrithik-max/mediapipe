@@ -10,8 +10,7 @@ import com.google.mediapipe.tasks.vision.objectdetector.ObjectDetectorResult
 import kotlin.math.max
 import kotlin.math.min
 
-class OverlayView(context: Context?, attrs: AttributeSet?) :
-    View(context, attrs) {
+class OverlayView(context: Context?, attrs: AttributeSet?) : View(context, attrs) {
 
     constructor(context: Context) : this(context, null)
 
@@ -53,78 +52,61 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
         textPaint.textSize = 50f
 
         boxPaint.color = ContextCompat.getColor(context!!, R.color.black)
-        boxPaint.strokeWidth = 8F
+        boxPaint.strokeWidth = 8f
         boxPaint.style = Paint.Style.STROKE
     }
 
     override fun draw(canvas: Canvas) {
         super.draw(canvas)
-        results?.detections()?.map {
-            val boxRect = RectF(
-                it.boundingBox().left,
-                it.boundingBox().top,
-                it.boundingBox().right,
-                it.boundingBox().bottom
-            )
-            val matrix = Matrix()
-            matrix.postTranslate(-outputWidth / 2f, -outputHeight / 2f)
-
-            // Rotate box.
-            matrix.postRotate(outputRotate.toFloat())
-
-            // If the outputRotate is 90 or 270 degrees, the translation is
-            // applied after the rotation. This is because a 90 or 270 degree rotation
-            // flips the image vertically or horizontally, respectively.
-            if (outputRotate == 90 || outputRotate == 270) {
-                matrix.postTranslate(outputHeight / 2f, outputWidth / 2f)
-            } else {
-                matrix.postTranslate(outputWidth / 2f, outputHeight / 2f)
+        results?.detections()?.let { detections ->
+            // Precompute the transformation matrix
+            val matrix = Matrix().apply {
+                // Scale to match the view size
+                postScale(scaleFactor, scaleFactor)
+                // Translate to account for view offset
+                postTranslate((width - outputWidth * scaleFactor) / 2f, (height - outputHeight * scaleFactor) / 2f)
+                // Apply rotation around the center of the view
+                postRotate(outputRotate.toFloat(), width / 2f, height / 2f)
             }
-            matrix.mapRect(boxRect)
-            boxRect
-        }?.forEachIndexed { index, floats ->
 
-            val top = floats.top * scaleFactor
-            val bottom = floats.bottom * scaleFactor
-            val left = floats.left * scaleFactor
-            val right = floats.right * scaleFactor
-
-            // Draw bounding box around detected objects
-            val drawableRect = RectF(left, top, right, bottom)
-            canvas.drawRect(drawableRect, boxPaint)
-
-            // Create text to display alongside detected objects
-            val category = results?.detections()!![index].categories()[0]
-            val drawableText =
-                category.categoryName() + " " + String.format(
-                    "%.2f",
-                    category.score()
+            detections.forEachIndexed { index, detection ->
+                val boxRect = RectF(
+                    detection.boundingBox().left,
+                    detection.boundingBox().top,
+                    detection.boundingBox().right,
+                    detection.boundingBox().bottom
                 )
 
-            // Draw rect behind display text
-            textBackgroundPaint.getTextBounds(
-                drawableText,
-                0,
-                drawableText.length,
-                bounds
-            )
-            val textWidth = bounds.width()
-            val textHeight = bounds.height()
-            canvas.drawRect(
-                left,
-                top,
-                left + textWidth + BOUNDING_RECT_TEXT_PADDING,
-                top + textHeight + BOUNDING_RECT_TEXT_PADDING,
-                textBackgroundPaint
-            )
+                // Map the bounding box to the view's coordinate system
+                matrix.mapRect(boxRect)
 
-            // Draw text for detected object
-            canvas.drawText(
-                drawableText,
-                left,
-                top + bounds.height(),
-                textPaint
-            )
+                // Draw bounding box
+                canvas.drawRect(boxRect, boxPaint)
+
+                // Create text to display alongside detected objects
+                val category = detection.categories()[0]
+                val drawableText = "${category.categoryName()} ${String.format("%.2f", category.score())}"
+
+                // Draw rect behind display text
+                textBackgroundPaint.getTextBounds(drawableText, 0, drawableText.length, bounds)
+                val textWidth = bounds.width()
+                val textHeight = bounds.height()
+                canvas.drawRect(
+                    boxRect.left,
+                    boxRect.top,
+                    boxRect.left + textWidth + BOUNDING_RECT_TEXT_PADDING,
+                    boxRect.top + textHeight + BOUNDING_RECT_TEXT_PADDING,
+                    textBackgroundPaint
+                )
+
+                // Draw text for detected object
+                canvas.drawText(
+                    drawableText,
+                    boxRect.left,
+                    boxRect.top + bounds.height(),
+                    textPaint
+                )
+            }
         }
     }
 
@@ -139,29 +121,21 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
         this.outputHeight = outputHeight
         this.outputRotate = imageRotation
 
-        // Calculates the new width and height of an image after it has been rotated.
-        // If `imageRotation` is 0 or 180, the new width and height are the same
-        // as the original width and height.
-        // If `imageRotation` is 90 or 270, the new width and height are swapped.
+        // Calculate the new width and height after rotation
         val rotatedWidthHeight = when (imageRotation) {
             0, 180 -> Pair(outputWidth, outputHeight)
             90, 270 -> Pair(outputHeight, outputWidth)
             else -> return
         }
 
-        // Images, videos are displayed in FIT_START mode.
-        // Camera live streams is displayed in FILL_START mode. So we need to scale
-        // up the bounding box to match with the size that the images/videos/live streams being
-        // displayed.
+        // Calculate scale factor based on running mode
         scaleFactor = when (runningMode) {
-            RunningMode.IMAGE,
-            RunningMode.VIDEO -> {
+            RunningMode.IMAGE, RunningMode.VIDEO -> {
                 min(
                     width * 1f / rotatedWidthHeight.first,
                     height * 1f / rotatedWidthHeight.second
                 )
             }
-
             RunningMode.LIVE_STREAM -> {
                 max(
                     width * 1f / rotatedWidthHeight.first,

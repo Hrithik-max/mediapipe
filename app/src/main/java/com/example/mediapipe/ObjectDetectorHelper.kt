@@ -21,7 +21,7 @@ class ObjectDetectorHelper(
     var threshold: Float = THRESHOLD_DEFAULT,
     var maxResults: Int = MAX_RESULTS_DEFAULT,
     var currentDelegate: Int = DELEGATE_CPU,
-    var currentModel: Int = MODEL_EFFICIENTDETV0,
+    var currentModel: Int = MODEL_SSD_MOBILENETV2,
     var runningMode: RunningMode = RunningMode.IMAGE,
     val context: Context,
     var objectDetectorListener: DetectorListener? = null
@@ -49,9 +49,8 @@ class ObjectDetectorHelper(
         }
 
         val modelName = when (currentModel) {
-            MODEL_EFFICIENTDETV0 -> "models/efficientdet_lite0.tflite"
-            MODEL_EFFICIENTDETV2 -> "models/efficientdet_lite2.tflite"
-            else -> "models/efficientdet_lite0.tflite"
+            MODEL_SSD_MOBILENETV2 -> "models/ssd_mobilenet_v2.tflite"
+            else -> "models/ssd_mobilenet_v2.tflite"
         }
 
         baseOptionsBuilder.setModelAssetPath(modelName)
@@ -161,8 +160,7 @@ class ObjectDetectorHelper(
     companion object {
         const val DELEGATE_CPU = 0
         const val DELEGATE_GPU = 1
-        const val MODEL_EFFICIENTDETV0 = 0
-        const val MODEL_EFFICIENTDETV2 = 1
+        const val MODEL_SSD_MOBILENETV2 = 0
         const val MAX_RESULTS_DEFAULT = 3
         const val THRESHOLD_DEFAULT = 0.5f
         const val TAG = "ObjectDetectorHelper"
